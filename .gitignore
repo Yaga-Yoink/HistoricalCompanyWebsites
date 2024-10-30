@@ -1,0 +1,13 @@
+.venv
+client_secret*
+.env
+.DS_Store
+praw.ini
+twitter_accounts.txt
+accounts.db
+*.pyc
+__pycache__
+*/website_text*
+*/name_url*
+*.txt*
+*.csv*
