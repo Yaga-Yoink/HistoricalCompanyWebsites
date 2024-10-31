@@ -6,6 +6,7 @@ import os
 from time import perf_counter
 import datetime
 import asyncio
+from urllib.parse import urlparse
 # from memory_profiler import profile
 
 
@@ -28,6 +29,7 @@ number_of_workers = 10
 
 start_time = datetime.datetime.now()
 api_call_count = 0
+
 
 
 # # Return the language of "text"
@@ -72,7 +74,7 @@ class RateLimiter:
 
                 # Sleep if we haven't completed the time period
                 if time_elapsed < self.time_period:
-                    print("Rate limit reached. Sleeping...")
+                    # print("Rate limit reached. Sleeping...")
                     await asyncio.sleep(self.time_period - time_elapsed)
                 
                 # Reset the start time and API call count
@@ -84,6 +86,7 @@ class RateLimiter:
 # Testing values
 cdx_rate_limiter = RateLimiter(1, 1)
 other_rate_limiter = RateLimiter(1, 2)
+
 
 # Async function to get timestamps for up to 'n' versions of the website
 async def get_timestamps(session, company_url, n):
@@ -105,8 +108,8 @@ async def get_timestamps(session, company_url, n):
             flag = False
         except Exception as e:
             if "Errno 61" in str(e):
-                print(e)
-                print("CDX Server Rate Limit Sleeping")
+                # print(e)
+                # print("CDX Server Rate Limit Sleeping")
                 time.sleep(121)
             else:
                 print("other", e)
@@ -127,31 +130,32 @@ async def get_historical_text(session, company_url, timestamp, file_path):
         session, f"{web_url}/web/{timestamp}/{company_url}", 100000
     )
         text_file.write(home_page_text)
-
+        # print('linked pages', linked_pages)
         if linked_pages:
             # Find every linked page with the same domain
             # print(linked_pages)
-            # if len(linked_pages) != 0:
-                # counter = 0
-                # modified_linked_pages = []
-                # for page in linked_pages:
-                #     if counter >= 20:
-                #         break
-                #     linked_pages.append(page)
-                #     counter += 1
+            if len(linked_pages) != 0:
+                counter = 0
+                modified_linked_pages = []
+                for page in linked_pages:
+                    if counter >= 20:
+                        break
+                    modified_linked_pages.append(page)
+                    counter += 1
                 
                 
                 # print('type', type(modified_linked_pages), modified_linked_pages)
-                # num_linked_pages = len(modified_linked_pages)
-                # character_limit = 100000
-                # per_page_limit = character_limit // num_linked_pages
-            for page in linked_pages:
-                if not re.search(r".*\.(?i:pdf|jpg|gif|png|bmp)", page) and re.match(
-                    "http", page
-                ):
-                    #TOD: This could be teh cause of larg ememory usage, lots of beautiful soup processes of millions of characters
-                    linked_page_text, _ = await get_webpage_text(session, page)
-                    text_file.write(linked_page_text)
+                num_linked_pages = len(modified_linked_pages)
+                character_limit = 200000
+                per_page_limit = character_limit // num_linked_pages
+            # linked_pages = list(filter((lambda x : None if "twitter" in x else x),list(linked_pages)))
+                for page in modified_linked_pages:
+                    if not re.search(r".*\.(?i:pdf|jpg|gif|png|bmp)", page) and re.match(
+                        "http", page
+                    ):
+                        #TOD: This could be teh cause of larg ememory usage, lots of beautiful soup processes of millions of characters
+                        linked_page_text, _ = await get_webpage_text(session, page, per_page_limit)
+                        text_file.write(linked_page_text)
         if home_page_text:
             return True
     return False
@@ -159,44 +163,47 @@ async def get_historical_text(session, company_url, timestamp, file_path):
 
 # Async function to get the webpage text and response for a given URL
 # @profile
-async def get_webpage_text(session, get_url):
-    try:
-        await other_rate_limiter.api_limit()
-        r = await session.get(get_url, timeout = 10)
-        soup = BeautifulSoup(r.content, "html.parser")
-        page_text = " ".join(soup.text.split())
-        linked_pages = r.html.absolute_links
-        del soup
-        del r
-        return page_text, linked_pages
-    # The case where the url is not formed properly or the website can't be reached for whatever reason
-    except Exception as e:
-        # print(type(e))
-        # print(f"Unable to get webpage text of {get_url}: {e}")
-        if "Errno 61" in str(e):
-            # print("Going to sleep for a minute untill get_webpage ratelimit finishes. ")
-            time.sleep(61)
-        # time.sleep(61)
-        return "", None
+async def get_webpage_text(session, get_url, per_page_limit):
+    while True:
+        try:
+            await other_rate_limiter.api_limit()
+            r = await session.get(get_url, timeout = 10)
+            soup = BeautifulSoup(r.content, "html.parser")
+            page_text = " ".join(soup.text.split())
+            page_text = page_text[:per_page_limit]
+            linked_pages = r.html.absolute_links
+            del soup
+            del r
+            return page_text, linked_pages
+        # The case where the url is not formed properly or the website can't be reached for whatever reason
+        except Exception as e:
+            # print(type(e))
+            # print(f"Unable to get webpage text of {get_url}: {e}")
+            if "Errno 61" in str(e):
+                # print("Going to sleep for a minute untill get_webpage ratelimit finishes. ")
+                await asyncio.sleep(61)
+            # time.sleep(61)
+            else:
+                return "", None
 
 
 # Async function to handle a single company's data
 async def handle_company(session, company, n):
     # print(f"Processing {company["CompanyName"]}")
-    if company["URL"]:
+    print(company["URL"], not pd.isna(company["URL"]))
+    if not pd.isna(company["URL"]):
         timestamps = await get_timestamps(session, company["URL"], n)
-        company_dir = f"website_text/{date}/{company['CompanyName']}"
-        print(company["URL"])
-        print(timestamps)
-        if timestamps and not pd.isnull(company["URL"]):
-            os.makedirs(company_dir, exist_ok=True)
+        if timestamps:
+            company_dir = f"website_text/{date}/{company['CompanyName']}"
+            # print(company["URL"])
+            if timestamps and not pd.isnull(company["URL"]):
+                os.makedirs(company_dir, exist_ok=True)
 
-            tasks = []
-            tasks.append(save_company_data(session, company, timestamps, company_dir))
-            website_start_time = perf_counter()
-            files = await asyncio.gather(*tasks)
-            # print(f"Time Taken Saving Website Text: {str(perf_counter() - website_start_time)}")
-            return files
+                tasks = []
+                tasks.append(save_company_data(session, company, timestamps, company_dir))
+                files = await asyncio.gather(*tasks)
+                # print(f"Time Taken Saving Website Text: {str(perf_counter() - website_start_time)}")
+                return files
     return [{company.name: []}]
 
 
@@ -275,15 +282,13 @@ async def iterate_historical(session, company_df, n):
         async with sem:
             files = await handle_company(session, company, n)
             await add_timestamp_columns(company, files)
-    
-    company_start_time = perf_counter()
     tasks = []
     for _, company in company_df.iterrows():
         # Await inside the append in order to get the text of the websites at the same time as getting the timestamps
         # Enables processing of texts while slowing down the amount of calls to the cdx
         # print(company)
         tasks.append(semaphore_handle_company(session, company, n, semaphore))
-    list = await asyncio.gather(*tasks, return_exceptions=True)
+    await asyncio.gather(*tasks, return_exceptions=False)
     # print(list)
     # print(f"Time Taken Processing {company["CompanyName"]} : {str(perf_counter() - company_start_time)}")
 
@@ -318,11 +323,11 @@ def headers():
 
 
 if __name__ == "__main__":
-    # chunked_company_df = pd.read_csv(
-    #     "text_ready_name_url_10_07_02_49_38.csv", chunksize=5
-    # )
     company_df = pd.read_csv(
         "text_ready_name_url_10_07_02_49_38.csv"
     )
+    # company_df = pd.read_csv(
+    #     "company_websites/test_async_ready_small.csv")
+
     output_header_csv(10)
     async_historical_entry(company_df, 10)

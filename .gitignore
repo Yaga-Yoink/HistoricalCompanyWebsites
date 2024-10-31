@@ -10,4 +10,7 @@ __pycache__
 */website_text*
 */name_url*
 *.txt*
-*.csv*
+*.csv
+build/*
+dist/*
+async_historical_information.spec
