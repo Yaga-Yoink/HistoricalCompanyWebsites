@@ -3,14 +3,8 @@ from bs4 import BeautifulSoup
 import re
 import pandas as pd
 import os
-from time import perf_counter
 import datetime
 import asyncio
-from urllib.parse import urlparse
-# from memory_profiler import profile
-
-
-# from lingua import LanguageDetectorBuilder, Language
 from sklearn.feature_extraction.text import TfidfVectorizer
 import time
 
@@ -30,29 +24,6 @@ number_of_workers = 10
 start_time = datetime.datetime.now()
 api_call_count = 0
 
-
-
-# # Return the language of "text"
-# async def determine_language(text):
-#     detector = LanguageDetectorBuilder.from_all_languages().build()
-#     language = detector.detect_language_of(text)
-#     return language
-
-
-# # Block the program from continuing until time_period is passed with the desired number_of_calls
-# async def api_limit(time_period, number_of_calls):
-#     global api_call_count
-#     global start_time
-#     api_call_count += 1
-#     if api_call_count >= number_of_calls:
-#         end_time = datetime.datetime.now()
-#         while (end_time - start_time).seconds < time_period:
-#             print("Sleeping")
-#             time.sleep(1)
-#             end_time = datetime.datetime.now()
-#         start_time = datetime.datetime.now()
-#         api_call_count = 1
-#     return
 
 class RateLimiter:
     def __init__(self, time_period, number_of_calls):
@@ -91,8 +62,7 @@ other_rate_limiter = RateLimiter(1, 2)
 # Async function to get timestamps for up to 'n' versions of the website
 async def get_timestamps(session, company_url, n):
     await cdx_rate_limiter.api_limit()
-    flag = True
-    while flag:
+    for _ in range(2):
         try:
             r = await session.get(
                 f"{web_url}/cdx/search/cdx",
@@ -105,15 +75,14 @@ async def get_timestamps(session, company_url, n):
                 },
             )
             # print(r)
-            flag = False
         except Exception as e:
             if "Errno 61" in str(e):
-                # print(e)
-                # print("CDX Server Rate Limit Sleeping")
+                print(e)
+                print("CDX Server Rate Limit Sleeping")
                 time.sleep(121)
             else:
                 print("other", e)
-                flag = False
+                break
     try:
         response_json = r.json()
         return response_json[1:]  # Remove the "timestamp" header
@@ -164,7 +133,7 @@ async def get_historical_text(session, company_url, timestamp, file_path):
 # Async function to get the webpage text and response for a given URL
 # @profile
 async def get_webpage_text(session, get_url, per_page_limit):
-    while True:
+    for _ in range(2):
         try:
             await other_rate_limiter.api_limit()
             r = await session.get(get_url, timeout = 10)
@@ -185,6 +154,7 @@ async def get_webpage_text(session, get_url, per_page_limit):
             # time.sleep(61)
             else:
                 return "", None
+    return "", None
 
 
 # Async function to handle a single company's data
