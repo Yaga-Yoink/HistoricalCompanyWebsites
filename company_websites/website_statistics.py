@@ -1,7 +1,7 @@
 import pandas as pd
 import glob
 import re
-
+import matplotlib.pyplot as plt
 
 class Website_CSV_Statistics:
     def __init__(self, dir_path):
@@ -9,7 +9,9 @@ class Website_CSV_Statistics:
 
     # Returns a dataframe which combines all CSV files in 'dir_path' along the common columns names. Requires: CSV files have the same column names. Raises: Exception 
     def load_csv(self):
-        files = glob.glob(f"{self.dir_path}/*.csv")
+        # ** recursively goes through every subdirectory
+        # * matches any sequence of characters within the directory level
+        files = glob.glob(f"{self.dir_path}**/*.csv", recursive=True)
         print(files)
         if len(files) == 1: 
             return pd.read_csv(files[0], index_col="CompanyName")
@@ -63,15 +65,37 @@ class Website_CSV_Statistics:
         # Remove the extra information about which companies were documented in that year
         return {key : unique_year[key][0] for key in unique_year.keys()}
     
+    # Returns the average length of the text for all the text files in 'self.dir_path'.
+    def average_text_length(self):
+        files = glob.glob(f"{self.dir_path}**/*.txt", recursive=True)
+        text_length = 0
+        for file in files:
+            text_length += len(open(file).read())
+        return text_length / len(files)
     
+    #TODO: add parameters for custom title and label
+    # Plot a bar chart in ascending label order where the keys of dict are x labels and values are y labels. 
+    def plot_year(self, year_dict : dict):
+        fig, ax = plt.subplots()
+        plt.xticks(fontsize = "xx-small")
+        year_dict = dict(sorted(year_dict.items()))
+        ax.bar(year_dict.keys(), year_dict.values())
+        plt.show()
+        pass
+        
 
 # TODO: make some pretty graphs and analytics pictures for the calculated stats
 
 
 if __name__ == "__main__":
-
-    website_stats = Website_CSV_Statistics("final_g2_run/historical_versions")
+    website_stats = Website_CSV_Statistics("final_g2_run/")
     df = website_stats.load_csv()
+    print("df : ", df.head(2))
     year_count_dict = website_stats.year_count(df)
+    print("Year count dict : ", year_count_dict)
     unique_per_year_dict = website_stats.unique_per_year(df)
+    print("Unique per year dict :", unique_per_year_dict)
+    # average_text_length = website_stats.average_text_length()
+    # print(f"Average text length (chars): {average_text_length}")
+    website_stats.plot_year(year_count_dict)
     
