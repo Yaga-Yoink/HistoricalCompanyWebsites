@@ -7,15 +7,19 @@ class Website_CSV_Statistics:
     def __init__(self, dir_path):
         self.dir_path = dir_path
 
-    # Returns a dataframe which combines all CSV files in 'dir_path' along the common columns names. Requires: CSV files have the same column names.
+    # Returns a dataframe which combines all CSV files in 'dir_path' along the common columns names. Requires: CSV files have the same column names. Raises: Exception 
     def load_csv(self):
         files = glob.glob(f"{self.dir_path}/*.csv")
-
-        dfs = map(pd.read_csv, files)
-        result_df = pd.concat(dfs)
-        result_df = result_df.loc[~result_df.index.duplicated(keep="first")]
-        print(result_df.columns)
-        return result_df
+        print(files)
+        if len(files) == 1: 
+            return pd.read_csv(files[0], index_col="CompanyName")
+        elif len(files) > 1:
+            dfs = map(lambda file : pd.read_csv(file, index_col="CompanyName"), files)
+            result_df = pd.concat(dfs)
+            result_df = result_df.loc[~result_df.index.duplicated(keep="first")]
+            return result_df
+        else:
+            raise Exception("load_csv requires there to be a matching CSV in the dir_path")
 
     # Returns a dictionary {year i: number of websites collected on year i, ... year n : number of websites collected on year n}. Requires: text file names end with yyyymmddhhmmss.txt
     def year_count(self, df: pd.DataFrame):
@@ -29,13 +33,13 @@ class Website_CSV_Statistics:
                 year_dict[year] = 1
         year_dict = {}
         df = df.filter(axis=1, regex="text_version_[0-9]+$")
-        df = df.fillna("")
+        df = df.fillna('')
         df.map(add_year)
         # Remove the non-existant years used for filling nan values
-        year_dict.pop("")
+        if '' in year_dict.keys():
+            year_dict.pop('')
         return year_dict
     
-    #TODO: add testing for function below
     #Returns a dictionary {year i: number of unique company websites collected on year i, ... year n : number of unique company websites collected on year n}
     def unique_per_year(self, df: pd.DataFrame):
               # Appends the year as a key to year_dict and increments the value.
@@ -58,12 +62,16 @@ class Website_CSV_Statistics:
         df.map(add_year)
         # Remove the extra information about which companies were documented in that year
         return {key : unique_year[key][0] for key in unique_year.keys()}
+    
+    
+
+# TODO: make some pretty graphs and analytics pictures for the calculated stats
 
 
 if __name__ == "__main__":
 
     website_stats = Website_CSV_Statistics("final_g2_run/historical_versions")
     df = website_stats.load_csv()
-    website_stats.year_count(df)
-    website_stats.unique_per_year(df)
+    year_count_dict = website_stats.year_count(df)
+    unique_per_year_dict = website_stats.unique_per_year(df)
     
