@@ -149,7 +149,36 @@ import pandas as pd
 
 from urllib.parse import urlparse
 
-"https://web.archive.org/web/20240826000455/https://www.youtube.com/pdaxph"
-insta = "https://web.archive.org/web/20240205055224/http://instagram.com/JourneyProtect"
+# "https://web.archive.org/web/20240826000455/https://www.youtube.com/pdaxph"
+# insta = "https://web.archive.org/web/20240205055224/http://instagram.com/JourneyProtect"
 
-print(urlparse(insta).netloc)
+# print(urlparse(insta).netloc)
+
+# company_df = pd.read_csv(
+#         "text_ready_name_url_10_07_02_49_38.csv"
+#     )
+
+# print(company_df["URL"].count())
+from requests_html import AsyncHTMLSession
+import asyncio
+from bs4 import BeautifulSoup
+
+async def test():
+    session = AsyncHTMLSession(workers=10)
+    r = await session.get(
+                    f"https://web.archive.org/cdx/search/cdx",
+                    params={
+                        "url": "http://digibyte.co/",
+                        "output": "json",
+                        "fl": ["timestamp"],
+                        "limit": -10,
+                        "filter": ["statuscode:200", "!mimetype:application/octet-stream"],
+                    },
+                )
+    print(r.json())
+    text = await session.get("https://web.archive.org/web/20240616025227/http://digibyte.co/", timeout = 30)
+    soup = BeautifulSoup(text.content, "html.parser")
+    page_text = " ".join(soup.text.split())
+    print(page_text)
+
+asyncio.run(test())
