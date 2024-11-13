@@ -3,17 +3,24 @@ import glob
 import re
 import matplotlib.pyplot as plt
 
+import nltk
+nltk.download('popular')
+nltk.download('punkt')
+nltk.download('punkt_tab')
 
 class Website_CSV_Statistics:
     def __init__(self, dir_path):
         self.dir_path = dir_path
+
+    # Return a list of all the paths to the text files within all subdirectories of 'self.dir_path'
+    def text_files(self):
+        return glob.glob(f"{self.dir_path}**/*.txt", recursive=True)
 
     # Returns a dataframe which combines all CSV files in 'dir_path' along the common columns names. Requires: CSV files have the same column names. Raises: Exception
     def load_csv(self):
         # ** recursively goes through every subdirectory
         # * matches any sequence of characters within the directory level
         files = glob.glob(f"{self.dir_path}**/*.csv", recursive=True)
-        print(files)
         if len(files) == 1:
             return pd.read_csv(files[0], index_col="CompanyName")
         elif len(files) > 1:
@@ -52,7 +59,7 @@ class Website_CSV_Statistics:
         def add_year(cell):
             # Name of the company
             # ^ is negation, [^/] matches any non-slash character, [^/]+ matches 1 or more non-slash character
-            name_match = re.search("/website_text/[^/]+/([^/]+)/[^/]+\.txt", cell)
+            name_match = re.search(r"/website_text/[^/]+/([^/]+)/[^/]+\.txt", cell)
             if name_match:
                 name = name_match.group(1)
                 year = cell[-18:-14]
@@ -73,22 +80,35 @@ class Website_CSV_Statistics:
         # Remove the extra information about which companies were documented in that year
         return {key: unique_year[key][0] for key in unique_year.keys()}
 
-    # Returns the average length of the text for all the text files in 'self.dir_path'.
+    # Returns the average length of the text for all the text files in 'self.dir_path' that are not empty.
     def average_text_length(self):
-        files = glob.glob(f"{self.dir_path}**/*.txt", recursive=True)
+        empty_files = self.empty_text_file_paths()
+        files = list(filter(lambda x : x not in empty_files , self.text_files()))
         text_length = 0
         for file in files:
-            text_length += len(open(file).read())
+            with open(file) as opened_file:
+                text_length += len(opened_file.read())
         return text_length / len(files)
 
+    # Returns a list of all the filepaths in 'self.dir_path' that are empty. 
+    def empty_text_file_paths(self):
+        files = self.text_files()
+        result = []
+        for file in files:
+            with open(file) as opened_file:
+                if len(opened_file.read()) == 0:
+                    result.append(file)
+        return result
+    
     # Returns the number of text files in 'self.dir_path' that are empty.
     def num_empty_files(self):
-        files = glob.glob(f"{self.dir_path}**/*.txt", recursive=True)
-        counter = 0
-        for file in files:
-            if len(open(file).read()) == 0:
-                counter += 1
-        return counter
+        files = self.text_files()
+        return len(self.empty_text_file_paths())
+    
+    # Returns the number of text files in 'self.dir_path'.
+    def total_num_files(self):
+        files = self.text_files()
+        return len(files)
 
     # Plot a bar chart in ascending label order where the keys of dict are x labels and values are y labels. 'graph_info' contains [title, xlabel, ylabel]
     def plot_year(self, year_dict: dict, graph_info: list):
@@ -100,7 +120,24 @@ class Website_CSV_Statistics:
         ax.set_xlabel(graph_info[1])
         ax.set_ylabel(graph_info[2])
         plt.show()
-        pass
+
+    # Return a dictionary with the {word : number of occurences in all text files} from all of the text files in 'self.dir_path' where only non-stopword words are included.
+    def word_frequency(self):
+        stop_words = set(nltk.corpus.stopwords.words('English'))
+        files = self.text_files()
+        dict = {}
+        for file in files:
+            with open(file) as opened_file:
+                file_text = opened_file.read()
+                # file_text = nltk.word_tokenize(file_text)
+                file_text = file_text.lower().split(" ")
+                for word in file_text:
+                    if word not in stop_words:
+                        if word in dict.keys():
+                            dict[word] += 1
+                        else:
+                            dict[word] = 1
+        return dict
 
 
 # TODO: make some pretty graphs and analytics pictures for the calculated stats
@@ -114,23 +151,30 @@ if __name__ == "__main__":
     print("Year count dict : ", year_count_dict)
     unique_per_year_dict = website_stats.unique_per_year(df)
     print("Unique per year dict :", unique_per_year_dict)
-    # average_text_length = website_stats.average_text_length()
-    # print(f"Average text length (chars): {average_text_length}")
-    website_stats.plot_year(
-        year_count_dict,
-        [
-            "Number of Company Websites Collected Per Year",
-            "Year",
-            "Number of Company Websites",
-        ],
-    )
-    website_stats.plot_year(
-        unique_per_year_dict,
-        [
-            "Number of Unique Companies Collected Per Year",
-            "Year",
-            "Number of Unique Companies",
-        ],
-    )
+    average_text_length = website_stats.average_text_length()
+    print(f"Average text length (chars): {average_text_length}")
+    # website_stats.plot_year(
+    #     year_count_dict,
+    #     [
+    #         "Number of Company Websites Collected Per Year",
+    #         "Year",
+    #         "Number of Company Websites",
+    #     ],
+    # )
+    # website_stats.plot_year(
+    #     unique_per_year_dict,
+    #     [
+    #         "Number of Unique Companies Collected Per Year",
+    #         "Year",
+    #         "Number of Unique Companies",
+    #     ],
+    # )
+    
+    
     num_empty = website_stats.num_empty_files()
     print("Number of Empty Website Text Files: ", num_empty)
+    word_freq = website_stats.word_frequency()
+    print("Word frequency : ",  dict(sorted(word_freq.items(), key = lambda x : x[1])))
+    num_files = website_stats.total_num_files()
+    print("Number of Non-empty Text Files: ", num_files - num_empty)
+    
