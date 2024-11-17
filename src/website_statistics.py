@@ -144,7 +144,7 @@ class Website_CSV_Statistics:
 
 
 if __name__ == "__main__":
-    website_stats = Website_CSV_Statistics("final_g2_run/")
+    website_stats = Website_CSV_Statistics("output_g2_run/")
     df = website_stats.load_csv()
     print("df : ", df.head(2))
     year_count_dict = website_stats.year_count(df)

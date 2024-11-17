@@ -1,10 +1,6 @@
-import os, sys
-# To get the parent directory which has website_statistics
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from website_statistics import Website_CSV_Statistics
+import os
 import unittest
-import pandas as pd
 
 class TestWebsiteStats(unittest.TestCase):
     
@@ -33,6 +29,7 @@ class TestWebsiteStats(unittest.TestCase):
         
     def test_num_empty_files(self):
         self.assertEqual(self.WebsiteStatistics.num_empty_files(), 1)
+        
 if __name__ == "__main__":
     unittest.main()
         
