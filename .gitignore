@@ -16,3 +16,4 @@ dist/*
 async_historical_information.spec
 *.zip
 *.log
+!requirements.txt
