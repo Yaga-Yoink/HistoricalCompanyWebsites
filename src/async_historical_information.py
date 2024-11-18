@@ -8,15 +8,12 @@ import asyncio
 from sklearn.feature_extraction.text import TfidfVectorizer
 import time
 from rate_limiter import RateLimiter
-
 from bs4.builder import XMLParsedAsHTMLWarning
 import warnings
-
 import logging
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 pd.options.display.max_rows = 1000
-
 pd.options.mode.chained_assignment = None
 
 date = datetime.datetime.now().strftime("%m_%d_%H_%M_%S")
@@ -39,10 +36,6 @@ other_restart_time = 80
 base_output_path = "data/"
 
 input_name_url_csv = "data/input_data/text_ready_name_url_10_07_02_49_38.csv"
-
-
-# TODO: cleanup and modularize this better
-# TODO: add driver
 
 
 # Returns the column names of the output CSV file with 'n' historical versions.
@@ -79,7 +72,6 @@ async def get_timestamps(session, company_url, n):
                 time.sleep(cdx_restart_time)
             else:
                 logger.debug(f"Non Ratelimiting Timestamp Error: {e}")
-                
 
 
 # Get the historical text from a 'company_url' at a time 'timestamp' and save the text to 'file_path'.
@@ -247,10 +239,16 @@ def output_header_csv(n):
         text_file.write(header)
         text_file.write("\n")
 
+
 # Setup the logger by initializing the log directory if not made and create the new log file
 def init_log():
     os.makedirs("src/logs/async_historical_information", exist_ok=True)
-    logging.basicConfig(filename=f"src/logs/async_historical_information/async_historical_information_{date}.log", encoding='utf-8', level=logging.DEBUG)
+    logging.basicConfig(
+        filename=f"src/logs/async_historical_information/async_historical_information_{date}.log",
+        encoding="utf-8",
+        level=logging.DEBUG,
+    )
+
 
 if __name__ == "__main__":
     init_log()

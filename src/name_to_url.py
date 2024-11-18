@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 import os
 import pandas as pd
 from time import perf_counter
@@ -83,6 +82,7 @@ def get_website_url_llm(company_df):
     ) as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["CompanyID", "CompanyName", "URL", "probability"])
+
         def helper_func(row, company):
             row["probability"] = float(
                 send_request(
@@ -145,18 +145,23 @@ def name_to_url(data):
             name_url_dict[name] = data["entities"][i]["properties"]["website_url"]
     return name_url_dict
 
+
 # Setup the logger by initializing the log directory if not made and create the new log file
 def init_log():
     os.makedirs("src/logs/name_url", exist_ok=True)
-    logging.basicConfig(filename=f"src/logs/name_url/name_url_{current_date}.log", encoding='utf-8', level=logging.DEBUG)
+    logging.basicConfig(
+        filename=f"src/logs/name_url/name_url_{current_date}.log",
+        encoding="utf-8",
+        level=logging.DEBUG,
+    )
+
 
 # Setup the initial company df
 def setup_company_df():
-    company_df = pd.read_csv(
-        company_df_path
-    ).set_index("CompanyID")
+    company_df = pd.read_csv(company_df_path).set_index("CompanyID")
     company_df["URL"] = ""
     return company_df
+
 
 if __name__ == "__main__":
     init_log()

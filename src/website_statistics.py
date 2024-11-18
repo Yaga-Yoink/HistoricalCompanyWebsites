@@ -4,9 +4,11 @@ import re
 import matplotlib.pyplot as plt
 
 import nltk
-nltk.download('popular')
-nltk.download('punkt')
-nltk.download('punkt_tab')
+
+nltk.download("popular")
+nltk.download("punkt")
+nltk.download("punkt_tab")
+
 
 class Website_CSV_Statistics:
     def __init__(self, dir_path):
@@ -83,14 +85,14 @@ class Website_CSV_Statistics:
     # Returns the average length of the text for all the text files in 'self.dir_path' that are not empty.
     def average_text_length(self):
         empty_files = self.empty_text_file_paths()
-        files = list(filter(lambda x : x not in empty_files , self.text_files()))
+        files = list(filter(lambda x: x not in empty_files, self.text_files()))
         text_length = 0
         for file in files:
             with open(file) as opened_file:
                 text_length += len(opened_file.read())
         return text_length / len(files)
 
-    # Returns a list of all the filepaths in 'self.dir_path' that are empty. 
+    # Returns a list of all the filepaths in 'self.dir_path' that are empty.
     def empty_text_file_paths(self):
         files = self.text_files()
         result = []
@@ -99,12 +101,12 @@ class Website_CSV_Statistics:
                 if len(opened_file.read()) == 0:
                     result.append(file)
         return result
-    
+
     # Returns the number of text files in 'self.dir_path' that are empty.
     def num_empty_files(self):
         files = self.text_files()
         return len(self.empty_text_file_paths())
-    
+
     # Returns the number of text files in 'self.dir_path'.
     def total_num_files(self):
         files = self.text_files()
@@ -123,7 +125,7 @@ class Website_CSV_Statistics:
 
     # Return a dictionary with the {word : number of occurences in all text files} from all of the text files in 'self.dir_path' where only non-stopword words are included.
     def word_frequency(self):
-        stop_words = set(nltk.corpus.stopwords.words('English'))
+        stop_words = set(nltk.corpus.stopwords.words("English"))
         files = self.text_files()
         dict = {}
         for file in files:
@@ -169,12 +171,10 @@ if __name__ == "__main__":
     #         "Number of Unique Companies",
     #     ],
     # )
-    
-    
+
     num_empty = website_stats.num_empty_files()
     print("Number of Empty Website Text Files: ", num_empty)
     word_freq = website_stats.word_frequency()
-    print("Word frequency : ",  dict(sorted(word_freq.items(), key = lambda x : x[1])))
+    print("Word frequency : ", dict(sorted(word_freq.items(), key=lambda x: x[1])))
     num_files = website_stats.total_num_files()
     print("Number of Non-empty Text Files: ", num_files - num_empty)
-    

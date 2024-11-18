@@ -15,5 +15,3 @@ print(f"LLM found {llm_url_count} URLS.")
 print(f"Original found {origin_version} URLS.")
 print(f"LLM Improvement =  {(llm_url_count / origin_version) * 100} URLS.")
 print(f"Total Inputted Companies = {input_row_count}")
-
-
