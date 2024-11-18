@@ -231,7 +231,7 @@ def async_historical_entry(company_df, n):
 
 # Initializes a historical_versions directory and outputs the columns into an initial CSV.
 def output_header_csv(n):
-    os.makedirs("historical_versions", exist_ok=True)
+    os.makedirs(f"{base_output_path}/historical_versions", exist_ok=True)
     header = headers(n)
     with open(
         f"{base_output_path}/historical_versions/test_async_historical_{date}.csv", "a+"

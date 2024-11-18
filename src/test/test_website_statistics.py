@@ -1,3 +1,7 @@
+import os, sys
+# To get the parent directory which has website_statistics
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from website_statistics import Website_CSV_Statistics
 import os
 import unittest
@@ -5,7 +9,7 @@ import unittest
 class TestWebsiteStats(unittest.TestCase):
     
     def setUp(self):
-        self.test_folder_path = "company_websites/testing/website_statistics_test_folder/"
+        self.test_folder_path = "src/test/website_statistics_test_folder/"
         self.historical_versions_test_path = os.path.join(self.test_folder_path, "historical_versions")
         self.WebsiteStatistics = Website_CSV_Statistics(self.test_folder_path)
         

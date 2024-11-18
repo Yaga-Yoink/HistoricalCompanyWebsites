@@ -76,6 +76,7 @@ def setup_organizations_df():
 
 # Search for the website urls of the names from the company names in "CompanyName" columnn of "company_df". Returns "company_df" with a the "URL" column filled as much as possible.
 def get_website_url_llm(company_df):
+    os.makedirs(f"{output_base_dir}", exist_ok=True)
     with open(
         f"{output_base_dir}/name_url_{current_date}.csv",
         "w",
