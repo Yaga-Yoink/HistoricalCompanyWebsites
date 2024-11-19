@@ -2,12 +2,12 @@ import pandas as pd
 import glob
 import re
 import matplotlib.pyplot as plt
-
+import numpy as np
 import nltk
 
-nltk.download("popular")
-nltk.download("punkt")
-nltk.download("punkt_tab")
+nltk.download("popular", quiet=True)
+nltk.download("punkt", quiet=True)
+nltk.download("punkt_tab", quiet=True)
 
 
 class Website_CSV_Statistics:
@@ -91,6 +91,17 @@ class Website_CSV_Statistics:
             with open(file) as opened_file:
                 text_length += len(opened_file.read())
         return text_length / len(files)
+    
+    # Returns a list of the number of words in all text files in 'self.dir_path'. 
+    def num_words_per_file(self):
+        # files = list(set(self.text_files()) - set(self.empty_text_file_paths()))
+        files = self.text_files()
+        result = []
+        for file in files:
+            with open(file) as opened_file:
+                result.append(len(opened_file.read().split(" ")))
+        return result
+        
 
     # Returns a list of all the filepaths in 'self.dir_path' that are empty.
     def empty_text_file_paths(self):
@@ -122,6 +133,22 @@ class Website_CSV_Statistics:
         ax.set_xlabel(graph_info[1])
         ax.set_ylabel(graph_info[2])
         plt.show()
+        
+    # Plot the histogram of 'data' collected with the graph labels from 'graph_info'
+    def plot_histogram(self, data, graph_info):
+        fig, ax = plt.subplots()
+        plt.xticks(fontsize="xx-small")
+        ax.set_title(graph_info[0])
+        ax.set_xlabel(graph_info[1])
+        ax.set_ylabel(graph_info[2])
+        # ax.set_yticks([y for y in range(0, 1800, 200)])
+        # ax.set_ylim(1800)
+        # plt.stairs(counts, bin)
+        print(data)
+        ax.hist(data, range = (0,35000), bins = 20)
+        plt.show()
+        
+        
 
     # Return a dictionary with the {word : number of occurences in all text files} from all of the text files in 'self.dir_path' where only non-stopword words are included.
     def word_frequency(self):
@@ -146,15 +173,15 @@ class Website_CSV_Statistics:
 
 
 if __name__ == "__main__":
-    website_stats = Website_CSV_Statistics("output_g2_run/")
+    website_stats = Website_CSV_Statistics("data/output_g2_run/")
     df = website_stats.load_csv()
     print("df : ", df.head(2))
-    year_count_dict = website_stats.year_count(df)
-    print("Year count dict : ", year_count_dict)
-    unique_per_year_dict = website_stats.unique_per_year(df)
-    print("Unique per year dict :", unique_per_year_dict)
-    average_text_length = website_stats.average_text_length()
-    print(f"Average text length (chars): {average_text_length}")
+    # year_count_dict = website_stats.year_count(df)
+    # print("Year count dict : ", year_count_dict)
+    # unique_per_year_dict = website_stats.unique_per_year(df)
+    # print("Unique per year dict :", unique_per_year_dict)
+    # average_text_length = website_stats.average_text_length()
+    # print(f"Average text length (chars): {average_text_length}")
     # website_stats.plot_year(
     #     year_count_dict,
     #     [
@@ -172,9 +199,15 @@ if __name__ == "__main__":
     #     ],
     # )
 
-    num_empty = website_stats.num_empty_files()
-    print("Number of Empty Website Text Files: ", num_empty)
-    word_freq = website_stats.word_frequency()
-    print("Word frequency : ", dict(sorted(word_freq.items(), key=lambda x: x[1])))
-    num_files = website_stats.total_num_files()
-    print("Number of Non-empty Text Files: ", num_files - num_empty)
+    # num_empty = website_stats.num_empty_files()
+    # print("Number of Empty Website Text Files: ", num_empty)
+    # word_freq = website_stats.word_frequency()
+    # print("Word frequency : ", dict(sorted(word_freq.items(), key=lambda x: x[1])))
+    # num_files = website_stats.total_num_files()
+    # print("Number of Non-empty Text Files: ", num_files - num_empty)
+    num_words_per_file = website_stats.num_words_per_file()
+    website_stats.plot_histogram(num_words_per_file, [
+            "Number of Words Per Text File",
+            "Number of Words",
+            "Number of Text Files",
+        ])
